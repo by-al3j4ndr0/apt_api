@@ -16,9 +16,12 @@ class QueryView(APIView):
         data = Transfer.objects.all()        # Perform database query
         df = read_frame(data)            # Transform queryset into pandas dataframe0
 
-        query = df[df["hbl"] == hbl]
+        query_serie = df.loc[df["hbl"] == hbl]
+        query_df = query_serie.to_dict(orient='list')
 
-        return Response(query)              # Return the result in JSON via Django REST Framework
+        serializers = TransferSerializers(query_df)
+
+        return Response(serializers.data)              # Return the result in JSON via Django REST Framework
 
 class ConfirmWarehouse(APIView):
 
@@ -40,17 +43,36 @@ class FileUploadView(APIView):
 
     def put(self, request, format=None):
         file_obj = request.data['file']
+        additional_cols = ['warehouse']
 
         data = pd.read_csv(file_obj)
         
-        transfer_df = pd.DataFrame(data)
+        df = pd.DataFrame(data)
 
         # Convert the DataFrame to Django Model instances and save them
-        for index, row in transfer_df.iterrows():
+        for index, row in df.iterrows():
             Transfer.objects.create(
                 hbl=row['hbl'],
                 name=row['name'],
                 city=row['city'],
                 state=row['state'],
+                warehouse=row['warehouse']
         )
         return Response(status=204)
+    
+class CheckWarehouse(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, format=None):
+        data = Transfer.objects.all()
+        df = read_frame(data)
+        false_df = pd.DataFrame(columns=('hbl', 'name', 'city', 'state', 'warehouse'))
+
+        query = df.loc[df["warehouse"] == "False"] 
+        html_df = pd.concat([false_df, query])
+
+        # Convert the DataFrame to an HTML table
+        html_table = html_df.to_html(columns=('hbl', 'name', 'city', 'state', 'warehouse'), index=False)
+
+        return render(request, 'display_table.html', {'html_table': html_table})

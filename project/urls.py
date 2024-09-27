@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('v1/upload', FileUploadView.as_view()),
     path('v1/query', QueryView.as_view()),
-    path('v1/confirm', ConfirmWarehouse.as_view())
+    path('v1/confirm', ConfirmWarehouse.as_view()),
+    path('v1/warehouse', CheckWarehouse.as_view())
 ]
